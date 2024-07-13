@@ -1,13 +1,21 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoFallGame2D.Clases;
+using Statics;
+using System;
 
 namespace MonoFallGame2D
 {
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
+        private SpriteBatch sBatch;
+
+        private Loader loader;
+
+        private Player player;
+        private Level level;
 
         public Game1()
         {
@@ -20,22 +28,32 @@ namespace MonoFallGame2D
         {
             // TODO: Add your initialization logic here
 
+            player = new(new Vector2(100f, 100f));
+            level = new();
+            GameStatics.RectanglesList = level.CreateLevel();
+            loader = new(this.Content);
+
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            sBatch = new SpriteBatch(GraphicsDevice);
+
+            loader.Load();
+            player.LoadSprite();
 
             // TODO: use this.Content to load your game content here
         }
 
         protected override void Update(GameTime gameTime)
         {
+            float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            player.Update(delta);
 
             base.Update(gameTime);
         }
@@ -44,7 +62,9 @@ namespace MonoFallGame2D
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            sBatch.Begin();
+            player.Draw(sBatch);
+            sBatch.End();
 
             base.Draw(gameTime);
         }

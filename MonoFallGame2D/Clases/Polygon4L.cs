@@ -5,9 +5,9 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Design;
 using MonoGame.Framework.Utilities;
-using static test.Clases.Polygon4L;
+using static MonoFallGame2D.Clases.Polygon4L;
 
-namespace test.Clases
+namespace MonoFallGame2D.Clases
 {
     internal class Polygon4L : Polygon //Esta clase es una clase hija de la clase Polygon
     {
@@ -15,51 +15,65 @@ namespace test.Clases
         float Y;
         float Width;
         float Height;
-        //Tiene variables de X, Y, Width, Height (X, Y, ancho y altura)
 
         Vector2 Offset;
         float NewWidth;
         float NewHeight;
 
-        public Polygon4L(Vector2 position, float width, float height, Vector2 offset, float rotate = 0) //Este es el constructor de la clase
+        //Constructores.
+        public Polygon4L(Vector2 position, float width, float height, Vector2 offset, float rotate = 0)
         {
             Vector2[] Points = SetPoints(position, width, height, offset);
-            //Ese Vector2[] Points es un array de vectores
-            //Dentro del constructor de la clase podemos poner funciones
 
             this.Offset = offset;
+            this.X = position.X;
+            this.Y = position.Y;
             this.NewHeight = height;
             this.NewWidth = width;
 
-            //El Vector2[] que devuelve se utiliza aquí
-            foreach (Vector2 point in Points)
-            {
-                PolygonPoints.Add(point);
-            } //un bucle que agrega cada punto a una lista de Vectores
-        } //Todo ese es el primer constructor de Polygonos de 4 Lados
+            PolygonPoints = Constructor4L(Points);
+        }
 
-        public Polygon4L(Vector2 point1, Vector2 point2, Vector2 point3, Vector2 point4)
+        public Polygon4L(Vector2 point1, Vector2 point2, Vector2 point3, Vector2 point4, Vector2 offset)
         {
             Vector2[] Points = new Vector2[4]
             {
-                point1,
-                point2,
-                point3,
-                point4
+                point1 + offset,
+                point2 + offset,
+                point3 + offset,
+                point4 + offset
             };
-            //En este caso, en vez de dar la posicion, la altura, la anchura y un offset, damos directamente los 4 puntos y se crea el nuevo poligono
-        } //Este es un segundo constructor de Polygonos de 4 lados 
-        //Si, podemos tener varios constructores de una misma clase
 
-        public void Update(Vector2 NewPosition)
+            PolygonPoints = Constructor4L(Points);
+
+            this.Offset = offset;
+            this.X = this.PolygonPoints[0].X;
+            this.Y = this.PolygonPoints[0].Y;
+            this.NewWidth = this.PolygonPoints[1].X - this.PolygonPoints[0].X;
+            this.NewHeight = this.PolygonPoints[3].Y - this.PolygonPoints[0].Y;
+        }
+
+        public Polygon4L(Vector2[] Points, Vector2 offset) 
         {
-            PolygonPoints.Clear();
-            Vector2[] Points = SetPoints(NewPosition, NewWidth, NewHeight, Offset);
-            foreach (Vector2 point in Points)
+            PolygonPoints = Constructor4L(Points);
+
+            this.Offset = offset;
+            this.X = this.PolygonPoints[0].X;
+            this.Y = this.PolygonPoints[0].Y;
+            this.NewWidth = this.PolygonPoints[1].X - this.PolygonPoints[0].X;
+            this.NewHeight = this.PolygonPoints[3].Y - this.PolygonPoints[0].Y;
+        }
+
+        //Funciones privadas
+        private static List<Vector2> Constructor4L(Vector2[] points)
+        {
+            List<Vector2> polygonpoints = new();
+            foreach (Vector2 point in points)
             {
-                PolygonPoints.Add(point);
+                polygonpoints.Add(point);
             }
-        } //Esta es la función Update, actualiza los poligono a una nueva posición
+            return polygonpoints;
+        }
 
         private Vector2[] SetPoints(Vector2 position, float width, float height, Vector2 offset)
         { //Esta es la función que calcula las posiciones de los 4 vectores
@@ -74,14 +88,39 @@ namespace test.Clases
             return Points;
         }
 
-        public Rectangle ToRectangle()
+        //Funciones publicas
+        public void Update(Vector2 NewPosition)
         {
-            X = PolygonPoints[0].X;
-            Y = PolygonPoints[0].Y;
-            Width = PolygonPoints[1].X - PolygonPoints[0].X;
-            Height = PolygonPoints[3].Y - PolygonPoints[0].Y;
-            Rectangle rectangle = new((int)X, (int)Y, (int)Width, (int)Height);
+            PolygonPoints.Clear();
+            Vector2[] Points = SetPoints(NewPosition, NewWidth, NewHeight, Offset);
+            foreach (Vector2 point in Points)
+            {
+                PolygonPoints.Add(point);
+            }
+        }
+
+        //Funciones publicas estaticas
+        public static Rectangle ToRectangle(Polygon4L polygon4L)
+        {
+            polygon4L.X = polygon4L.PolygonPoints[0].X;
+            polygon4L.Y = polygon4L.PolygonPoints[0].Y;
+            polygon4L.Width = polygon4L.PolygonPoints[1].X - polygon4L.PolygonPoints[0].X;
+            polygon4L.Height = polygon4L.PolygonPoints[3].Y - polygon4L.PolygonPoints[0].Y;
+            Rectangle rectangle = new((int)polygon4L.X, (int)polygon4L.Y, (int)polygon4L.Width, (int)polygon4L.Height);
             return rectangle;
-        } //Y esta es una función que transforma un poligono de 4 lados en un rectangle que admite MonoGame para dibujar sprites.
+        }
+        public static Polygon4L FromRectangle(Rectangle rectangle)
+        {
+            Vector2[] points = new Vector2[4]
+            {
+                new Vector2(rectangle.X, rectangle.Y),
+                new Vector2(rectangle.X + rectangle.Width, rectangle.Y),
+                new Vector2(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height),
+                new Vector2(rectangle.X, rectangle.Y + rectangle.Height)
+            };
+
+            Polygon4L polygon = new(points, Vector2.Zero);
+            return polygon;
+        }
     }
 }

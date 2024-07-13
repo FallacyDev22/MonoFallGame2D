@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace test.Clases
+namespace MonoFallGame2D.Clases
 {
     public class Level //La clase Level
     {

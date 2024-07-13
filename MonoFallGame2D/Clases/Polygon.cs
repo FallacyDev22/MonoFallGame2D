@@ -6,14 +6,17 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace test.Clases
+namespace MonoFallGame2D.Clases
 {
-    internal class Polygon //Esta es la clase poligono, no la hija, sino la padre
+    internal class Polygon
     {
         public List<Vector2> PolygonPoints = new();
 
-        public Polygon() { }
-        public Polygon(Vector2[] Points) //Este es el constructor, recibe un array de Vectores y los agrega a una lista
+        //Constructor base.
+        protected Polygon() { }
+        
+        //Constructor
+        public Polygon(Vector2[] Points)
         {
             foreach (Vector2 point in Points)
             {
@@ -21,6 +24,7 @@ namespace test.Clases
             }
         }
 
+        //Funciones publicas estaticas
         public static bool IsColliding(Polygon polygon1, Polygon polygon2) //Debo hacer las conversiones porque el metodo de colision 
             //Solamente toma poligonos como argumentos, no rectangulos (Debido a que para la colision necesito los vertices de cada
             //figura, no sus caracteristicas
@@ -63,6 +67,7 @@ namespace test.Clases
             return true;
         }
 
+        //Funciones privadas
         private static void ProjectVertice(Polygon polygon, Vector2 axis, out float min, out float max)
         {
             min = float.MaxValue;
@@ -75,24 +80,7 @@ namespace test.Clases
                 if (Value < min) { min = Value; }
                 if (Value > max) { max = Value; }
             }
-        } //Todas esas dos funciones es el sistema de colisiones que utilizan los poligonos, llamado SAT, no entraré en profundidad
+        }
 
-        public static Polygon FromRectangle(Rectangle rectangle)
-        {
-            Vector2[] points = new Vector2[4]
-            {
-                new Vector2(rectangle.X, rectangle.Y),
-                new Vector2(rectangle.X + rectangle.Width, rectangle.Y),
-                new Vector2(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height),
-                new Vector2(rectangle.X, rectangle.Y + rectangle.Height)
-            };
-
-            Polygon polygon = new Polygon(points);
-            return polygon;
-        } //Esta es una función que crea un Poligono a partir de un rectangulo
-
-        //mi forma de definir un poligono es mediante 4 puntos en un plano, un rectangulo según MonoGame se define
-        //por su altura, anchura, y un origen (un vector2) por lo que tengo que realizar algunos calculos para 
-        //Transformar un Poligono de 4 lados a un rectangle o de un rectangle a un poligono de 4 lados.
     }
 }

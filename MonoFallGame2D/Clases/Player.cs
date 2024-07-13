@@ -3,70 +3,65 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Statics;
+using MonoFallGame2D.Clases;
 
-namespace test.Clases
+namespace MonoFallGame2D.Clases
 {
-    internal class Player //Clase Player
+    internal class Player : PhysicObject
     {
-        private Vector2 Velocity = new Vector2(0f, 0f);
-        private Vector2 PositionVector;
-        private Vector2 PreviousPositionVector; //Se crean unos vectores de velocidad y posiciones
-
-        private float Friction = 30;
 
         private bool LeftCollision = false;
         private bool RightCollision = false;
 
-        private Texture2D PolygonTexture;
-        private GraphicsDevice graphicsDevice = new GraphicsDevice(GraphicsAdapter.DefaultAdapter, GraphicsProfile.Reach, new PresentationParameters());
-        private Dictionary<String, Polygon4L> CollisionList; //Se crea un diccionario de String y PolygonL4
+        private float AcelerationX = 64f;
+        private float JumpForce = 600f;
 
+        private AnimatedSprite Sprite;
 
         public Rectangle Rectangle
         {
-            get => new Rectangle((int)PositionVector.X, (int)PositionVector.Y, 64, 64);
+            get => new((int)Position.X, (int)Position.Y, 64, 64);
         }
-
-        private float Gravity = 20f;
 
         private bool SpaceJustPressed = true;
 
-        public Player(Vector2 position) //Este es el constructor del Player, recibe la posicion 
+        public Player(Vector2 position)
         {
-            this.PositionVector = position; //Aqui asignamos la posicion al objeto
+            this.Position = position;
 
             this.CollisionList = new Dictionary<String, Polygon4L>
             {
-                { "Down", new Polygon4L(PositionVector, 32, 16, new Vector2(16, 48)) },
-                { "Left", new Polygon4L(PositionVector, 16, 32, new Vector2(0, 16)) },
-                { "Right", new Polygon4L(PositionVector, 16, 32, new Vector2(48, 16)) },
-                { "Up", new Polygon4L(PositionVector, 32, 16, new Vector2(16, 0)) },
+                { "Down", new(Position, 32, 16, new Vector2(16, 48)) },
+                { "Left", new(Position, 16, 32, new Vector2(0, 16)) },
+                { "Right", new(Position, 16, 32, new Vector2(48, 16)) },
+                { "Up", new(Position, 32, 16, new Vector2(16, 0)) },
             };
-            //Aquí se crean los polygonos de 4 lados, con esas caracteristicas
-            //ahora revisemos la clase Polygon4L
         }
 
-        public void Draw(SpriteBatch sb, Texture2D texture)
+        public void LoadSprite()
+        {
+            Sprite = new(Loader.TexturesPlayer, Loader.InfoPlayer, "Idle", new Point(64, 64));
+        }
+
+        public override void Draw(SpriteBatch sb)
         {
             
             PolygonTexture = new Texture2D(graphicsDevice, 1, 1);
             Color[] data = new Color[1] { Color.White };
             PolygonTexture.SetData<Color>(data);
-            sb.Draw(texture, new Rectangle((int)PositionVector.X, (int)PositionVector.Y, texture.Width * 4, texture.Height * 4), Color.White);
+
+            Sprite.Draw(sb, Position);
 
             foreach (string Polygon in CollisionList.Keys)
             {
-                sb.Draw(PolygonTexture, CollisionList[Polygon].ToRectangle(), Color.Black);
+                sb.Draw(PolygonTexture, Polygon4L.ToRectangle(CollisionList[Polygon]), Color.Black);
             }
             //Toda esta es la función de dibujo
         }
 
-        public void Update(float delta)
+        public override void Update(float delta)
         {
             if (IsOnFloor())
             {
@@ -74,70 +69,92 @@ namespace test.Clases
             }
             else
             {
-                Velocity.Y += Gravity/2;
+                Velocity.Y += Gravity;
             }
             if (IsOnWall())
             {
                 Velocity.X = 0;
             }
 
-            HandledInputs(delta);
+            HandledInputs();
+            SelectorAnimation();
 
-            PreviousPositionVector = PositionVector;
-            PositionVector += (Velocity * delta);
+            Position += (Velocity * delta);
 
             foreach (Polygon4L Raycast in CollisionList.Values)
             {
-                Raycast.Update(PositionVector);
+                Raycast.Update(Position);
             }
-            //Toda esta es la función de Actualización/Update
+        }
 
-            //lo que sigue son los comprobadores de si se está en el suelo o contra una pared
+        private void SelectorAnimation()
+        {
+            KeyboardState Input = Keyboard.GetState();
+
+            if (!Input.IsKeyDown(Keys.D) && !Input.IsKeyDown(Keys.A)) { Sprite.SetAnimation("Idle", 8f / 60f); }
+
+            else if (Input.IsKeyDown(Keys.D)) { Sprite.SetAnimation("RightWalk", 8f / 60f); }
+
+            else if (Input.IsKeyDown(Keys.A)) { Sprite.SetAnimation("LeftWalk", 8f / 60f); }
         }
 
         private bool IsOnFloor()
         {
-            foreach (var r in GameStatics.RectanglesList.Where(r => Polygon.IsColliding(CollisionList["Down"], Polygon.FromRectangle(r))))
+            if (GameStatics.RectanglesList.Count != 0)
             {
-                PositionVector.Y = r.Y - 64;
-                return true;
+                foreach (var r in GameStatics.RectanglesList.Where(r => Polygon.IsColliding(CollisionList["Down"], Polygon4L.FromRectangle(r))))
+                {
+                    Position.Y = r.Y - 64;
+                    return true;
+                }
+                return false;
             }
-            return false;
+            else
+            {
+                return false;
+            }
         }
         
 
         private bool IsOnWall()
         {
-            foreach (Rectangle r in GameStatics.RectanglesList)
+            if (GameStatics.RectanglesList.Count != 0)
             {
-                if (Polygon.IsColliding(CollisionList["Left"], Polygon.FromRectangle(r)))
+                foreach (Rectangle r in GameStatics.RectanglesList)
                 {
-                    PositionVector.X = r.X + 32;
-                    return true;
+                    if (Polygon.IsColliding(CollisionList["Left"], Polygon4L.FromRectangle(r)))
+                    {
+                        Position.X = r.X + 32;
+                        LeftCollision = true;
+                        return true;
+                    }
+                    else if (Polygon.IsColliding(CollisionList["Right"], Polygon4L.FromRectangle(r)))
+                    {
+                        Position.X = r.X - 64;
+                        RightCollision = true;
+                        return true;
+                    }
                 }
-                else if (Polygon.IsColliding(CollisionList["Right"], Polygon.FromRectangle(r)))
-                {
-                    PositionVector.X = r.X - 64;
-                    RightCollision = true;
-                    return true;
-                }
+                LeftCollision = false;
+                RightCollision = false;
+                return false;
             }
             LeftCollision = false;
             RightCollision = false;
             return false;
         }
 
-        private void HandledInputs(float delta)
+        private void HandledInputs()
         {
             KeyboardState Input = Keyboard.GetState();
 
             if (Input.IsKeyDown(Keys.A) && !LeftCollision)
             {
-                Velocity.X -= 64f;
+                Velocity.X -= AcelerationX;
             }
             if (Input.IsKeyDown(Keys.D) && !RightCollision)
             {
-                Velocity.X += 64f;
+                Velocity.X += AcelerationX;
             }
             else
             {
@@ -146,14 +163,14 @@ namespace test.Clases
 
             if (Input.IsKeyDown(Keys.Space) && SpaceJustPressed && IsOnFloor())
             {
-                Velocity.Y -= 600f;
+                Velocity.Y -= JumpForce;
                 SpaceJustPressed = false;
             }
+
             if (Input.IsKeyUp(Keys.Space))
             {
                 SpaceJustPressed = true;
             }
         }
-        //Aqui se manejan los inputs
     }
 }
